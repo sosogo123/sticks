@@ -1,0 +1,20 @@
+digraph finite_state_machine {
+	//rankdir=LR size="8,5"
+	node [fontname="Courier New"]
+	edge [fontname="Courier New"]
+
+	node [shape=circle]
+	//0000 [label="00\n00"]
+	//0010 [label="10\n00"]
+	//0011 [label="11\n00"]
+	1000 [label="00\n10", shape=doublecircle]
+	1010 [label="10\n10"]
+	1011 [label="11\n10"]
+	//1100 [label="00\n11", shape=doublecircle]
+	//1110 [label="10\n11"]
+	1111 [label="11\n11", shape=doublecircle]
+
+	1111 -> 1011 [label="HH"]
+	1011 -> 1010 [label="HH"]
+	1010 -> 1000 [label="HH"]
+}
