@@ -7,7 +7,7 @@ import graphviz
 #     src.render(view=True)
     # src.render('test-output/holy-grenade.gv', view=True)
 
-filepath = 'sticks-2.gv'
+filepath = 'sticks-3.gv'
 # filepath = 'fsm.gv'
 graphviz.render(engine='dot', format='png', filepath=filepath)
 graphviz.view(f'{filepath}.png')

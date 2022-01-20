@@ -1,0 +1,8 @@
+__pycache__*
+*.code-workspace
+*.env
+cache/
+temp/*
+*.egg-info
+.vscode/*
+viz/*
