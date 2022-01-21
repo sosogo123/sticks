@@ -1,14 +1,12 @@
-import os
-import time
-
+"""Generate graph functions.
+"""
 from pygraphviz import AGraph
-from pygraphviz.agraph import Node, Edge
-import graphviz
+from pygraphviz.agraph import Node
 
-file_prefix = 'snap'
-seq = 0
-path_viz = 'viz'
-make_snapshots = False
+from visualize import highlight_state, highlight_path
+from visualize import snapshot, write_dot
+from visualize import revert_state, revert_path
+
 
 def generate_graph(version=0):
     graph = AGraph(directed=True)
@@ -36,15 +34,16 @@ def generate_graph(version=0):
 
     return graph
 
-def generate_paths(graph: AGraph, in_state: Node, version):
+def generate_paths(graph: AGraph, in_state: Node, version: int):
     end_state = False
 
     highlight_state(in_state)
 
-    # unpacks in-state
+    # create position tuple from state string
     o_high, o_low, p_high, p_low = (
         int(in_state[0]), int(in_state[1]), int(in_state[2]), int(in_state[3])
     )
+    pos_tuple = (o_high, o_low, p_high, p_low)
 
     # check for end state
     if p_high == p_low == 0:
@@ -52,306 +51,135 @@ def generate_paths(graph: AGraph, in_state: Node, version):
         graph.get_node(in_state).attr['shape'] = 'doublecircle'
         snapshot(graph)
         revert_state(in_state)
-        return
+        return None
 
     # apply actions
-    generate_path_hh(graph, in_state, o_high, o_low, p_high, p_low, version)
-    generate_path_hl(graph, in_state, o_high, o_low, p_high, p_low, version)
-    generate_path_lh(graph, in_state, o_high, o_low, p_high, p_low, version)
-    generate_path_ll(graph, in_state, o_high, o_low, p_high, p_low, version)
-    # generate_path_su1(graph, in_state, o_high, o_low, p_high, p_low, version)
-    # generate_path_sd1(graph, in_state, o_high, o_low, p_high, p_low, version)
+    generate_path(graph, in_state, pos_tuple, version, 'HH')
+    generate_path(graph, in_state, pos_tuple, version, 'HL')
+    generate_path(graph, in_state, pos_tuple, version, 'LH')
+    generate_path(graph, in_state, pos_tuple, version, 'LL')
+    generate_path(graph, in_state, pos_tuple, version, 'SU1')
+    generate_path(graph, in_state, pos_tuple, version, 'SD1')
 
     revert_state(in_state)
 
-    return
+    return None
 
-def generate_path_hh(graph: AGraph, in_state, o_high, o_low, p_high, p_low, version):
-    out_state_exists = False
+def generate_path(graph: AGraph, in_state: Node, pos_tuple: tuple, version: int, action: str):
+    """Generate a single path for the specified state and action.
 
-    # applies action
-    if p_high > 0 and o_high > 0:
-        o_high += p_high
-        if o_high >= version:
-            o_high = 0
+    Args:
+        pos_tuple: Position tuple, defines o_high, o_low, p_high, p_low
+    """
+    # apply action
+    out_pos_tuple = apply_action(pos_tuple, version, action)
 
-        # re-order highs, lows
-        o_high, o_low = reorder(o_high, o_low)
-    
-        # repack out-state
-        out_state_str = f'{p_high}{p_low}{o_high}{o_low}'
-        out_state_label = fr'{p_high}{p_low}\n{o_high}{o_low}'
+    if not out_pos_tuple:
+        return None
 
-        # create node
-        out_state = None
-        if out_state_str in graph.nodes():
-            out_state = graph.get_node(out_state_str)
-            out_state_exists = True
-        else:
-            graph.add_node(out_state_str, label=out_state_label)
-            out_state = graph.get_node(out_state_str)
+    # get out state
+    out_state = get_out_state(graph, out_pos_tuple)
+    out_state_loop = True if out_state.attr.get('loop') == 'True' else False
 
-        # create edge
-        graph.add_edge(in_state, out_state, label='HH')
+    # create path
+    path = create_path(graph, in_state, out_state, action)
+
+    if not out_state_loop:
+        generate_paths(graph, out_state, version)
+
+    if path:
+        revert_path(path)
+
+def get_out_state(graph: AGraph, pos_tuple: tuple) -> Node:
+    # unpack position tuple
+    o_high, o_low, p_high, p_low = pos_tuple
+
+    # repack out-state
+    out_state_str = f'{p_high}{p_low}{o_high}{o_low}'
+    out_state_label = fr'{p_high}{p_low}\n{o_high}{o_low}'
+
+    # create node
+    if out_state_str in graph.nodes():
+        out_state = graph.get_node(out_state_str)
+        out_state.attr['loop'] = True
+    else:
+        graph.add_node(out_state_str, label=out_state_label)
+        out_state = graph.get_node(out_state_str)
+
+    return out_state
+
+def create_path(graph: AGraph, in_state: Node, out_state: Node, action: str):
+    path = None
+
+    if not graph.has_edge(in_state, out_state):
+        graph.add_edge(in_state, out_state, label=action)
         path = graph.get_edge(in_state, out_state)
         highlight_path(path)
         snapshot(graph)
 
-        if not out_state_exists:
-            generate_paths(graph, out_state, version)
+    return path
 
-        revert_path(path)
-
-    return None
-
-def generate_path_hl(graph: AGraph, in_state, o_high, o_low, p_high, p_low, version):
-    out_state_exists = False
-    path = None
+def apply_action(pos_tuple: tuple, version: int, action: str):
+    # unpack position tuple
+    o_high, o_low, p_high, p_low = pos_tuple
 
     # applies action
-    if p_high > 0 and o_low > 0:
+    if action == 'HH':
+        if not (p_high > 0 and o_high > 0):
+            return None
+
+        o_high += p_high
+        if o_high >= version:
+            o_high = 0
+
+    elif action == 'HL':
+        if not (p_high > 0 and o_low > 0):
+            return None
+
         o_low += p_high
         if o_low >= version:
             o_low = 0
 
-        # re-order highs, lows
-        o_high, o_low = reorder(o_high, o_low)
-    
-        # repack out-state
-        out_state_str = f'{p_high}{p_low}{o_high}{o_low}'
-        out_state_label = fr'{p_high}{p_low}\n{o_high}{o_low}'
+    elif action == 'LH':
+        if not (p_low > 0 and o_high > 0):
+            return None
 
-        # create node
-        out_state = None
-        if out_state_str in graph.nodes():
-            out_state = graph.get_node(out_state_str)
-            out_state_exists = True
-        else:
-            graph.add_node(out_state_str, label=out_state_label)
-            out_state = graph.get_node(out_state_str)
-
-        # create edge
-        if not graph.has_edge(in_state, out_state):
-            graph.add_edge(in_state, out_state, label='HL')
-            path = graph.get_edge(in_state, out_state)
-            highlight_path(path)
-            snapshot(graph)
-
-        if not out_state_exists:
-            generate_paths(graph, out_state, version)
-
-    if path:
-        revert_path(path)
-
-    return None
-
-def generate_path_lh(graph: AGraph, in_state, o_high, o_low, p_high, p_low, version):
-    out_state_exists = False
-    path = None
-
-    # applies action
-    if p_low > 0 and o_high > 0:
         o_high += p_low
         if o_high >= version:
             o_high = 0
 
-        # re-order highs, lows
-        o_high, o_low = reorder(o_high, o_low)
-    
-        # repack out-state
-        out_state_str = f'{p_high}{p_low}{o_high}{o_low}'
-        out_state_label = fr'{p_high}{p_low}\n{o_high}{o_low}'
+    elif action == 'LL':
+        if not (p_low > 0 and o_low > 0):
+            return None
 
-        # create node
-        out_state = None
-        if out_state_str in graph.nodes():
-            out_state = graph.get_node(out_state_str)
-            out_state_exists = True
-        else:
-            graph.add_node(out_state_str, label=out_state_label)
-            out_state = graph.get_node(out_state_str)
-
-        # create edge
-        if not graph.has_edge(in_state, out_state):
-            graph.add_edge(in_state, out_state, label='LH')
-            path = graph.get_edge(in_state, out_state)
-            highlight_path(path)
-            snapshot(graph)
-
-        if not out_state_exists:
-            generate_paths(graph, out_state, version)
-
-    if path:
-        revert_path(path)
-
-    return None
-
-def generate_path_ll(graph: AGraph, in_state, o_high, o_low, p_high, p_low, version):
-    out_state_exists = False
-    path = None
-
-    # applies action
-    if p_low > 0 and o_low > 0:
         o_low += p_low
         if o_low >= version:
             o_low = 0
 
-        # re-order highs, lows
-        o_high, o_low = reorder(o_high, o_low)
-    
-        # repack out-state
-        out_state_str = f'{p_high}{p_low}{o_high}{o_low}'
-        out_state_label = fr'{p_high}{p_low}\n{o_high}{o_low}'
+    elif action == 'SU1':
+        if not (p_high > 0 and p_low > 0 and p_high < version - 1):
+            return None
 
-        # create node
-        out_state = None
-        if out_state_str in graph.nodes():
-            out_state = graph.get_node(out_state_str)
-            out_state_exists = True
-        else:
-            graph.add_node(out_state_str, label=out_state_label)
-            out_state = graph.get_node(out_state_str)
-
-        # create edge
-        if not graph.has_edge(in_state, out_state):
-            graph.add_edge(in_state, out_state, label='LL')
-            path = graph.get_edge(in_state, out_state)
-            highlight_path(path)
-            snapshot(graph)
-
-        if not out_state_exists:
-            generate_paths(graph, out_state, version)
-
-    if path:
-        revert_path(path)
-
-    return None
-
-def generate_path_su1(graph: AGraph, in_state, o_high, o_low, p_high, p_low, version):
-    out_state_exists = False
-    path = None
-
-    # applies action
-    if p_high > 0 and p_low > 0 and p_high < version - 1:
         p_high += 1
         p_low -= 1
 
-        # repack out-state
-        out_state_str = f'{p_high}{p_low}{o_high}{o_low}'
-        out_state_label = fr'{p_high}{p_low}\n{o_high}{o_low}'
+    elif action == 'SD1':
+        if not (p_high > 1 and p_high > p_low and p_high - 1 != p_low and p_low + 1 != p_high):
+            return None
 
-        # create node
-        out_state = None
-        if out_state_str in graph.nodes():
-            out_state = graph.get_node(out_state_str)
-            out_state_exists = True
-        else:
-            graph.add_node(out_state_str, label=out_state_label)
-            out_state = graph.get_node(out_state_str)
-
-        # create edge
-        if not graph.has_edge(in_state, out_state):
-            graph.add_edge(in_state, out_state, label='SU1')
-            path = graph.get_edge(in_state, out_state)
-            highlight_path(path)
-            snapshot(graph)
-
-        if not out_state_exists:
-            generate_paths(graph, out_state, version)
-
-    if path:
-        revert_path(path)
-
-    return None
-
-def generate_path_sd1(graph: AGraph, in_state, o_high, o_low, p_high, p_low, version):
-    out_state_exists = False
-    path = None
-
-    # TODO: need to guard against shift swaps
-
-    # applies action
-    if p_high > 1 and p_high > p_low and p_high - 1 != p_low and p_low + 1 != p_high:
         p_high -= 1
         p_low += 1
 
-        # repack out-state
-        out_state_str = f'{p_high}{p_low}{o_high}{o_low}'
-        out_state_label = fr'{p_high}{p_low}\n{o_high}{o_low}'
+    # re-order opponent's highs, lows
+    o_high, o_low = reorder(o_high, o_low)
 
-        # create node
-        out_state = None
-        if out_state_str in graph.nodes():
-            out_state = graph.get_node(out_state_str)
-            out_state_exists = True
-        else:
-            graph.add_node(out_state_str, label=out_state_label)
-            out_state = graph.get_node(out_state_str)
+    # return new tuple
+    return (o_high, o_low, p_high, p_low)
 
-        # create edge
-        if not graph.has_edge(in_state, out_state):
-            graph.add_edge(in_state, out_state, label='SD1')
-            path = graph.get_edge(in_state, out_state)
-            highlight_path(path)
-            snapshot(graph)
-
-        if not out_state_exists:
-            generate_paths(graph, out_state, version)
-
-    if path:
-        revert_path(path)
-
-    return None
-
-def reorder(high, low):
+def reorder(high: int, low: int):
     if high < low:
         return low, high
     return high, low
-
-def get_path_viz():
-    global seq
-    seq += 1
-    filename = f'{file_prefix}-{str(seq).zfill(4)}.png'
-    filepath = os.path.join(path_viz, filename)
-    return filepath
-
-def snapshot(graph, force=False, display=True):
-    if make_snapshots or force:
-        filepath = get_path_viz()
-        print(filepath)
-        graph.draw(filepath)
-        time.sleep(0.2)
-        if display:
-            graphviz.view(filepath)
-
-def highlight_state(state: Node):
-    if make_snapshots:
-        state.attr['color'] = 'blue'
-        state.attr['penwidth'] = 3.0
-        state.attr['fontcolor'] = 'blue'
-
-def highlight_path(path: Edge):
-    if make_snapshots:
-        path.attr['color'] = 'blue'
-        path.attr['penwidth'] = 3.0
-        path.attr['fontcolor'] = 'blue'
-
-def revert_state(state: Node):
-    if make_snapshots:
-        state.attr['color'] = 'black'
-        state.attr['penwidth'] = 1.0
-        state.attr['fontcolor'] = 'black'
-
-def revert_path(path: Edge):
-    if make_snapshots:
-        path.attr['color'] = 'black'
-        path.attr['penwidth'] = 1.0
-        path.attr['fontcolor'] = 'black'
-
-def write_dot(graph: AGraph):
-    filename = f'{file_prefix}.dot'
-    filepath = os.path.join(path_viz, filename)
-    graph.write(path=filepath)
 
 def main():
     global file_prefix
@@ -364,7 +192,7 @@ def main():
 
     snapshot(graph, force=True)
 
-    print('done')
+    return None
 
 if __name__ == '__main__':
     main()
