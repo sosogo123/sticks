@@ -3,10 +3,11 @@
 from pygraphviz import AGraph
 from pygraphviz.agraph import Node
 
-from visualize import highlight_state, highlight_path
-from visualize import snapshot, write_dot
-from visualize import revert_state, revert_path
+from visualize import Visualizer
+# from visualize import file_prefix
 
+
+viz = Visualizer()
 
 def generate_graph(version=0):
     graph = AGraph(directed=True)
@@ -37,7 +38,7 @@ def generate_graph(version=0):
 def generate_paths(graph: AGraph, in_state: Node, version: int):
     end_state = False
 
-    highlight_state(in_state)
+    viz.highlight_state(in_state)
 
     # create position tuple from state string
     o_high, o_low, p_high, p_low = (
@@ -49,8 +50,8 @@ def generate_paths(graph: AGraph, in_state: Node, version: int):
     if p_high == p_low == 0:
         end_state = True
         graph.get_node(in_state).attr['shape'] = 'doublecircle'
-        snapshot(graph)
-        revert_state(in_state)
+        viz.snapshot(graph)
+        viz.revert_state(in_state)
         return None
 
     # apply actions
@@ -61,7 +62,7 @@ def generate_paths(graph: AGraph, in_state: Node, version: int):
     generate_path(graph, in_state, pos_tuple, version, 'SU1')
     generate_path(graph, in_state, pos_tuple, version, 'SD1')
 
-    revert_state(in_state)
+    viz.revert_state(in_state)
 
     return None
 
@@ -88,7 +89,7 @@ def generate_path(graph: AGraph, in_state: Node, pos_tuple: tuple, version: int,
         generate_paths(graph, out_state, version)
 
     if path:
-        revert_path(path)
+        viz.revert_path(path)
 
 def get_out_state(graph: AGraph, pos_tuple: tuple) -> Node:
     # unpack position tuple
@@ -114,8 +115,8 @@ def create_path(graph: AGraph, in_state: Node, out_state: Node, action: str):
     if not graph.has_edge(in_state, out_state):
         graph.add_edge(in_state, out_state, label=action)
         path = graph.get_edge(in_state, out_state)
-        highlight_path(path)
-        snapshot(graph)
+        viz.highlight_path(path)
+        viz.snapshot(graph)
 
     return path
 
@@ -184,13 +185,13 @@ def reorder(high: int, low: int):
 def main():
     global file_prefix
     version = 4
-    file_prefix = f'version{version}'
+    viz.file_prefix = f'version{version}'
 
     graph = generate_graph(version=version)
     # graph = generate()
-    write_dot(graph)
+    viz.write_dot(graph)
 
-    snapshot(graph, force=True)
+    viz.snapshot(graph, force=True)
 
     return None
 
