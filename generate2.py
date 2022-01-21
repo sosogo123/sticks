@@ -4,9 +4,8 @@ from pygraphviz import AGraph
 from pygraphviz.agraph import Node
 
 from visualize import Visualizer
-# from visualize import file_prefix
 
-
+# initialize visualizer
 viz = Visualizer()
 
 def generate_graph(version=0):
@@ -55,12 +54,9 @@ def generate_paths(graph: AGraph, in_state: Node, version: int):
         return None
 
     # apply actions
-    generate_path(graph, in_state, pos_tuple, version, 'HH')
-    generate_path(graph, in_state, pos_tuple, version, 'HL')
-    generate_path(graph, in_state, pos_tuple, version, 'LH')
-    generate_path(graph, in_state, pos_tuple, version, 'LL')
-    generate_path(graph, in_state, pos_tuple, version, 'SU1')
-    generate_path(graph, in_state, pos_tuple, version, 'SD1')
+    action_list = ['HH', 'HL', 'LH', 'LL', 'SU1', 'SD1']
+    for action in action_list:
+        generate_path(graph, in_state, pos_tuple, version, action)
 
     viz.revert_state(in_state)
 
@@ -75,6 +71,7 @@ def generate_path(graph: AGraph, in_state: Node, pos_tuple: tuple, version: int,
     # apply action
     out_pos_tuple = apply_action(pos_tuple, version, action)
 
+    # stop, if invalid action
     if not out_pos_tuple:
         return None
 
@@ -85,6 +82,7 @@ def generate_path(graph: AGraph, in_state: Node, pos_tuple: tuple, version: int,
     # create path
     path = create_path(graph, in_state, out_state, action)
 
+    # continue
     if not out_state_loop:
         generate_paths(graph, out_state, version)
 
@@ -183,8 +181,7 @@ def reorder(high: int, low: int):
     return high, low
 
 def main():
-    global file_prefix
-    version = 4
+    version = 3
     viz.file_prefix = f'version{version}'
 
     graph = generate_graph(version=version)
