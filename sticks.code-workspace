@@ -17,10 +17,10 @@
 				"justMyCode": false
 			},
 			{
-				"name": "Render DOT",
+				"name": "Generate",
 				"type": "python",
 				"request": "launch",
-				"program": "temp4.py",
+				"program": "generate2.py",
 				"console": "integratedTerminal"
 			}
 		]
