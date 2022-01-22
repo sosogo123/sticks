@@ -14,6 +14,7 @@ def generate_graph(version=0):
 
     # set graph attributes
     graph.graph_attr['layout'] = 'dot'
+    graph.graph_attr['rankdir'] = 'LR'
     graph.graph_attr['fontname'] = 'Courier New'
     # graph.graph_attr['size'] = '7.5,10'
     # graph.graph_attr['ratio'] = 'fill'
@@ -170,18 +171,14 @@ def apply_action(pos_tuple: tuple, version: int, action: str):
         p_low += 1
 
     # re-order opponent's highs, lows
-    o_high, o_low = reorder(o_high, o_low)
+    if o_high < o_low:
+        o_high, o_low = o_low, o_high
 
     # return new tuple
     return (o_high, o_low, p_high, p_low)
 
-def reorder(high: int, low: int):
-    if high < low:
-        return low, high
-    return high, low
-
 def main():
-    version = 3
+    version = 4
     viz.file_prefix = f'version{version}'
 
     graph = generate_graph(version=version)
