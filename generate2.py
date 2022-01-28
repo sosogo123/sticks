@@ -49,7 +49,7 @@ def generate_paths(graph: AGraph, in_state: Node, version: int):
     # check for end state
     if p_high == p_low == 0:
         end_state = True
-        graph.get_node(in_state).attr['shape'] = 'doublecircle'
+        in_state.attr['shape'] = 'doublecircle'
         viz.snapshot(graph)
         viz.revert_state(in_state)
         return None
@@ -178,7 +178,7 @@ def apply_action(pos_tuple: tuple, version: int, action: str):
     return (o_high, o_low, p_high, p_low)
 
 def main():
-    version = 4
+    version = 3
     viz.file_prefix = f'version{version}'
 
     graph = generate_graph(version=version)
