@@ -4,6 +4,7 @@ from pygraphviz.agraph import Node
 import graphviz
 from visualize import Visualizer
 from analyze_dead import analyze_graph_dead
+from analyze_loop import analyze_graph_loop
 
 viz = Visualizer()
 # after you initialize the visualizer
@@ -104,6 +105,7 @@ def main():
     # graphviz.view('viz/version3.png')
     analyze_graph(graph)
     analyze_graph_dead(graph)
+    analyze_graph_loop(graph)
     viz.snapshot(graph)
     return None
 
