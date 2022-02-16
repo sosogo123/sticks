@@ -157,18 +157,18 @@ def apply_action(pos_tuple: tuple, version: int, action: str):
             o_low = 0
 
     elif action == 'SU1':
-        if not (p_high > 0 and p_low > 0 and p_high < version - 1):
+        p_tuple = shift_up(1, p_high, p_low, version)
+        if not p_tuple:
             return None
 
-        p_high += 1
-        p_low -= 1
+        p_high, p_low = p_tuple
 
     elif action == 'SD1':
-        if not (p_high > 1 and p_high > p_low and p_high - 1 != p_low and p_low + 1 != p_high):
+        p_tuple = shift_down(1, p_high, p_low, version)
+        if not p_tuple:
             return None
 
-        p_high -= 1
-        p_low += 1
+        p_high, p_low = p_tuple
 
     # re-order opponent's highs, lows
     if o_high < o_low:
@@ -176,6 +176,54 @@ def apply_action(pos_tuple: tuple, version: int, action: str):
 
     # return new tuple
     return (o_high, o_low, p_high, p_low)
+
+def shift_up(degree, p_high, p_low, version):
+    """
+    constraints:
+    - degree:
+    - p_high:
+        p_high + degree < version
+    - p_low:
+        p_low >= degree
+        p_low <= p_high
+    """
+    if p_high + degree >= version:
+        return None
+    if p_low < degree:
+        return None
+    if p_low > p_high:
+        return None
+
+    p_high += degree
+    p_low -= degree
+
+    return p_high, p_low
+
+def shift_down(degree, p_high, p_low, version):
+    """
+    constraints:
+    - degree: degree <= (version - 1) / 2
+    - p_high:
+        p_high > p_low
+        p_high >= degree
+    - p_low:
+        p_low + degree < version
+    """
+    if degree > (version - 1) / 2:
+        return None
+    if p_high <= p_low:
+        return None
+    if p_high < degree:
+        return None
+    if p_low + degree >= version:
+        return None
+    if p_low + degree == p_high:
+        return None
+
+    p_high -= degree
+    p_low += degree
+
+    return p_high, p_low
 
 def main():
     version = 3
