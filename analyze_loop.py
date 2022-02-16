@@ -8,6 +8,7 @@ viz = Visualizer()
 # after you initialize the visualizer
 viz.make_snapshots = True
 
+
 def analyze_graph_loop(graph):
     # get origin node
     stack = []
@@ -34,11 +35,34 @@ def analyze_path_loop(path,graph,stack):
     out_node = path[1]
     if out_node in stack:
         loop_start = stack.index(out_node)
-        
+        loop = stack[loop_start:]
+        process_loop(loop,graph)
         print(stack[loop_start:])
+
+
     else: 
         analyze_node_loop(out_node,graph,stack)
     
             
     
+    return
+
+def process_loop(loop,graph):
+    # mark nodes with loop
+    for loop_node in loop:
+        loop_node.attr['condition'] = 'loop'
+        viz.highlight_state(loop_node, color='orange')
+    # mark edges woth loop
+    
+    for index in range(len(loop)):
+        loop_node = loop[index]
+        print(loop_node)
+        try:
+            loop_edge = graph.get_edge(loop[index], loop[index + 1])
+        except IndexError:
+            loop_edge = graph.get_edge(loop[index], loop[0])
+        loop_edge.attr['condition'] = 'loop'
+        viz.highlight_path(loop_edge, color = 'orange')
+        print(loop_edge)
+       
     return
