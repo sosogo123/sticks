@@ -5,38 +5,52 @@ import graphviz
 from visualize import Visualizer
 from analyze_dead import analyze_graph_dead
 from analyze_loop import analyze_graph_loop
-from analyze_timing import analyze_graph_timing
 
 viz = Visualizer()
 # after you initialize the visualizer
 viz.make_snapshots = True
 
-def analyze_graph(graph):
-    # get origin node
-    origin = graph.get_node('1111')
-    analyze_node(origin,graph)
+def analyze_graph_timing(graph):
+    graph_state_previous = {}
+    graph_state_current =  get_graph_state(graph)
+    counter = 0
+    while graph_state_changed(graph_state_previous, graph_state_current):
+        counter = (counter+1)
+        print('counter', counter)
+        
+        # make a list of loop nodes
+        node_list = [node for node in graph.nodes() if node.attr['condition'] in ['loop', '']]
+        for node in node_list:
+            analyze_node_timing(node,graph)
+
+        # reset graph states
+        graph_state_previous = graph_state_current
+        graph_state_current = get_graph_state(graph)
+
     return
 
-def analyze_node(state,graph):
-    state.attr['found'] = 'true'
-    
-    # DEBUG
-    if state.attr['condition'] in ('win', 'lose'):
-        print('node already set')
+def get_graph_state(graph):
+    win_list = [node for node in graph.nodes() if node.attr['condition'] == 'win']
+    lose_list = [node for node in graph.nodes() if node.attr['condition'] == 'lose']
+    loop_list = [node for node in graph.nodes() if node.attr['condition'] == 'loop']
+    null_list = [node for node in graph.nodes() if node.attr['condition'] not in ['loop', 'lose', 'win']]
+    graph_state_dict = {'loop': len(loop_list), 'lose': len(lose_list), 'win': len(win_list), 'null':len(null_list)}
+    return graph_state_dict
 
-    viz.highlight_state(state)
-    print(f'node: {state}')
-
+def graph_state_changed(previous, current):
+    if previous != current:
+        return True
+    else:
+        return False
+def analyze_node_timing(state,graph):
+     
     # find edges
     edges = graph.out_edges(nbunch = state)
 
-    if len(edges)==0:
-        state.attr['type'] = 'end'
-        viz.highlight_state(state,color='magenta')
 
     for edge in edges:        
         if edge.attr['condition'] !='dead':
-            analyze_path(edge,graph)
+            analyze_path_timing(edge,graph)
     #print(edges)
         if edge.attr['condition'] == 'win':
             state.attr['condition'] = 'win'
@@ -69,14 +83,11 @@ def analyze_node(state,graph):
       # analyze path for each edge
     return
 
-def analyze_path(path,graph):
-    path.attr['found'] = 'true'
-    viz.highlight_path(path)
-
+def analyze_path_timing(path,graph):
     out_node = path[1]
 
-    if out_node.attr['found'] != 'true':
-        analyze_node(out_node,graph)
+    if out_node.attr['condition'] not in ['loop', 'dead']:
+        analyze_node_timing(out_node,graph)
 
         print(f'path out: {out_node}')
     if out_node.attr['type'] == 'end':
@@ -90,28 +101,4 @@ def analyze_path(path,graph):
         viz.highlight_path(path,color= 'green')
 
     
-    # else:
-    #     print('found loop')
-
-    # this will find the next node
-    # then, you call analyze node
-
     return
-
-def main():
-    version = 4
-    graph = AGraph()
-    graph.layout(prog='dot')
-    graph.read(path=f'viz/version{version}.dot')
-    graph.draw(f'viz/version{version}.png')
-    # graphviz.view(f'viz/version{version}.png')
-    analyze_graph(graph)
-    analyze_graph_dead(graph)
-    analyze_graph_loop(graph)
-    analyze_graph_timing(graph)
-
-    viz.snapshot(graph)
-    return None
-
-if __name__ == '__main__':
-    main()
