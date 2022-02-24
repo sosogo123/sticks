@@ -18,10 +18,12 @@ def analyze_graph_timing(graph):
         counter = (counter+1)
         print('counter', counter)
         
-        # make a list of loop nodes
-        node_list = [node for node in graph.nodes() if node.attr['condition'] in ['loop', '']]
+        # make a list of living nodes
+        node_list = [node for node in graph.nodes() if node.attr['condition'] !='dead']
+        print(f'living nodes: {len(node_list)}')
         for node in node_list:
             analyze_node_timing(node,graph)
+            analyze_node_timing_dead(node, graph)
 
         # reset graph states
         graph_state_previous = graph_state_current
@@ -42,16 +44,18 @@ def graph_state_changed(previous, current):
         return True
     else:
         return False
+
 def analyze_node_timing(state,graph):
-     
+    # check for dead state
+    analyze_node_dead(state, graph)
+
     # find edges
     edges = graph.out_edges(nbunch = state)
-
 
     for edge in edges:        
         if edge.attr['condition'] !='dead':
             analyze_path_timing(edge,graph)
-    #print(edges)
+
         if edge.attr['condition'] == 'win':
             state.attr['condition'] = 'win'
             viz.highlight_state(state,color='green')
@@ -61,35 +65,99 @@ def analyze_node_timing(state,graph):
                 if edgecheck.attr['condition'] != 'win':
                     edgecheck.attr['condition'] = 'dead'
                     viz.revert_path(edgecheck)
+
+                    # analyze corresponding node
+                    analyze_node_dead(edgecheck[1], graph)
                     
         if edge.attr['condition'] == 'lose':
-            if len(edges)==1:
+            all_losers = True
+            for edge in edges:
+                if edge.attr['condition'] not in ['lose', 'dead']:
+                    all_losers = False
+                    break
+
+            if all_losers:
                 state.attr['condition'] = 'lose'
                 viz.highlight_state(state,color='red')
 
-    # check all paths
-    if len(edges)>0:
-        all_losers = True
-        for edge in edges:
-            if edge.attr['condition'] != 'lose':
-                all_losers = False
-                break
+        if state != '1111':
+            if edge.attr['condition'] == 'dead':
+                all_dead = True
+                for edge in edges:
+                    if edge.attr['condition'] not in ['dead']:
+                        all_dead = False
+                        break
 
-        if all_losers:
-            state.attr['condition'] = 'lose'
-            viz.highlight_state(state,color='red')
+                if all_dead:
+                    state.attr['condition'] = 'dead'
+                    viz.revert_state(state)
 
+    return
 
-      # analyze path for each edge
+def analyze_node_dead(state, graph):
+    if state == '1111':
+        return
+
+    state.attr['dead_found'] = 'true'
+    # find edges
+    in_edges = graph.in_edges(nbunch = state)
+
+    all_dead = True
+    for in_edge in in_edges:
+        if in_edge.attr['condition'] != 'dead':
+            all_dead = False
+            break
+
+    if all_dead:
+        # viz.snapshot(graph)
+        state.attr['condition'] = 'dead'
+        viz.revert_state(state)
+
+        out_edges = graph.out_edges(nbunch = state)
+        for out_edge in out_edges:        
+            if out_edge.attr['condition'] !='dead':
+                out_edge.attr['condition'] = 'dead'
+                viz.revert_path(out_edge)
+
+def analyze_node_timing_dead(state,graph):
+    return
+    if state.attr['condition'] == 'dead':
+        return
+
+    # find edges
+    in_edges = graph.in_edges(nbunch = state)
+
+    all_dead = True
+    for in_edge in in_edges:
+        if in_edge.attr['condition'] != 'dead':
+            all_dead = False
+            break
+
+    if all_dead:
+        # viz.snapshot(graph)
+        state.attr['condition'] = 'dead'
+        viz.revert_state(state)
+
+        # find edges
+        out_edges = graph.out_edges(nbunch = state)
+
+        for out_edge in out_edges:        
+            out_edge.attr['condition'] ='dead'
+            viz.revert_path(out_edge)
+
+        # viz.snapshot(graph)
+
     return
 
 def analyze_path_timing(path,graph):
+    in_node = path[0]
     out_node = path[1]
 
     if out_node.attr['condition'] not in ['loop', 'dead']:
         analyze_node_timing(out_node,graph)
+        analyze_node_timing_dead(out_node, graph)
 
-        print(f'path out: {out_node}')
+        # print(f'path out: {out_node}')
     if out_node.attr['type'] == 'end':
         path.attr['condition'] = 'win'
         viz.highlight_path(path,color= 'green')
@@ -99,6 +167,5 @@ def analyze_path_timing(path,graph):
     if out_node.attr['condition'] == 'lose':
         path.attr['condition'] = 'win'
         viz.highlight_path(path,color= 'green')
-
     
     return
