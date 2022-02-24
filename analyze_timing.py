@@ -1,10 +1,8 @@
 from http.client import REQUESTED_RANGE_NOT_SATISFIABLE
 from pygraphviz import AGraph
 from pygraphviz.agraph import Node
-import graphviz
 from visualize import Visualizer
-from analyze_dead import analyze_graph_dead
-from analyze_loop import analyze_graph_loop
+from analyze_dead import analyze_node_dead
 
 viz = Visualizer()
 # after you initialize the visualizer
@@ -23,7 +21,6 @@ def analyze_graph_timing(graph):
         print(f'living nodes: {len(node_list)}')
         for node in node_list:
             analyze_node_timing(node,graph)
-            analyze_node_timing_dead(node, graph)
 
         # reset graph states
         graph_state_previous = graph_state_current
@@ -94,68 +91,12 @@ def analyze_node_timing(state,graph):
 
     return
 
-def analyze_node_dead(state, graph):
-    if state == '1111':
-        return
-
-    state.attr['dead_found'] = 'true'
-    # find edges
-    in_edges = graph.in_edges(nbunch = state)
-
-    all_dead = True
-    for in_edge in in_edges:
-        if in_edge.attr['condition'] != 'dead':
-            all_dead = False
-            break
-
-    if all_dead:
-        # viz.snapshot(graph)
-        state.attr['condition'] = 'dead'
-        viz.revert_state(state)
-
-        out_edges = graph.out_edges(nbunch = state)
-        for out_edge in out_edges:        
-            if out_edge.attr['condition'] !='dead':
-                out_edge.attr['condition'] = 'dead'
-                viz.revert_path(out_edge)
-
-def analyze_node_timing_dead(state,graph):
-    return
-    if state.attr['condition'] == 'dead':
-        return
-
-    # find edges
-    in_edges = graph.in_edges(nbunch = state)
-
-    all_dead = True
-    for in_edge in in_edges:
-        if in_edge.attr['condition'] != 'dead':
-            all_dead = False
-            break
-
-    if all_dead:
-        # viz.snapshot(graph)
-        state.attr['condition'] = 'dead'
-        viz.revert_state(state)
-
-        # find edges
-        out_edges = graph.out_edges(nbunch = state)
-
-        for out_edge in out_edges:        
-            out_edge.attr['condition'] ='dead'
-            viz.revert_path(out_edge)
-
-        # viz.snapshot(graph)
-
-    return
-
 def analyze_path_timing(path,graph):
     in_node = path[0]
     out_node = path[1]
 
     if out_node.attr['condition'] not in ['loop', 'dead']:
         analyze_node_timing(out_node,graph)
-        analyze_node_timing_dead(out_node, graph)
 
         # print(f'path out: {out_node}')
     if out_node.attr['type'] == 'end':

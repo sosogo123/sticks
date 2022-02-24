@@ -3,7 +3,6 @@ from pygraphviz import AGraph
 from pygraphviz.agraph import Node
 import graphviz
 from visualize import Visualizer
-from analyze_dead import analyze_graph_dead
 from analyze_loop import analyze_graph_loop
 from analyze_timing import analyze_graph_timing
 
@@ -127,7 +126,6 @@ def main():
     graph.draw(f'viz/version{version}.png')
     # graphviz.view(f'viz/version{version}.png')
     analyze_graph(graph)
-    # analyze_graph_dead(graph)
     analyze_graph_loop(graph)
     analyze_graph_timing(graph)
 
