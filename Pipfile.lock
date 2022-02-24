@@ -1,11 +1,11 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "d52aa19899e6a438b4470f87a47163b310f67ea5093e77eebd20a03ed9012f3e"
+            "sha256": "070e8b8d8ec493d396bc52991876ff1154190727d17b763c594a3df99e150ec6"
         },
         "pipfile-spec": 6,
         "requires": {
-            "python_version": "3.9"
+            "python_version": "3.10"
         },
         "sources": [
             {
@@ -223,18 +223,18 @@
         },
         "pygraphviz": {
             "hashes": [
-                "sha256:a7bec6609f37cf1e64898c59f075afd659106cf9356c5f387cecaa2e0cdb2304"
+                "sha256:eb2e25a2c647044e7b66b5a159be64daaef24b549fcf535c241369d6e6e09c45"
             ],
             "index": "pypi",
-            "version": "==1.7"
+            "version": "==1.8"
         },
         "pyparsing": {
             "hashes": [
-                "sha256:04ff808a5b90911829c55c4e26f75fa5ca8a2f5f36aa3a51f68e27033341d3e4",
-                "sha256:d9bdec0013ef1eb5a84ab39a3b3868911598afa494f5faa038647101504e2b81"
+                "sha256:18ee9022775d270c55187733956460083db60b37d0d0fb357445f3094eed3eea",
+                "sha256:a6c06a88f252e6c322f65faf8f418b16213b51bdfaece0524c1c1bc30c63c484"
             ],
             "markers": "python_version >= '3.6'",
-            "version": "==3.0.6"
+            "version": "==3.0.7"
         },
         "python-dateutil": {
             "hashes": [

@@ -30,17 +30,17 @@ class Visualizer:
             if display:
                 graphviz.view(filepath)
 
-    def highlight_state(self, state: Node):
+    def highlight_state(self, state: Node, color='blue'):
         if self.make_snapshots:
-            state.attr['color'] = 'blue'
+            state.attr['color'] = color
             state.attr['penwidth'] = 3.0
-            state.attr['fontcolor'] = 'blue'
+            state.attr['fontcolor'] = color
 
-    def highlight_path(self, path: Edge):
+    def highlight_path(self, path: Edge, color='blue'):
         if self.make_snapshots:
-            path.attr['color'] = 'blue'
+            path.attr['color'] = color
             path.attr['penwidth'] = 3.0
-            path.attr['fontcolor'] = 'blue'
+            path.attr['fontcolor'] = color
 
     def revert_state(self, state: Node):
         if self.make_snapshots:
