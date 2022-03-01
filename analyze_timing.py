@@ -1,4 +1,6 @@
 from http.client import REQUESTED_RANGE_NOT_SATISFIABLE
+from shutil import register_unpack_format
+from numpy import true_divide
 from pygraphviz import AGraph
 from pygraphviz.agraph import Node
 from visualize import Visualizer
@@ -8,7 +10,7 @@ viz = Visualizer()
 # after you initialize the visualizer
 viz.make_snapshots = True
 
-def analyze_graph_timing(graph):
+def analyze_graph_timing(graph,loop_list):
     graph_state_previous = {}
     graph_state_current =  get_graph_state(graph)
     counter = 0
@@ -22,9 +24,38 @@ def analyze_graph_timing(graph):
         for node in node_list:
             analyze_node_timing(node,graph)
 
+        for loop in loop_list:
+            analyze_loop_timing(loop,graph)
+
         # reset graph states
         graph_state_previous = graph_state_current
         graph_state_current = get_graph_state(graph)
+
+    return
+
+
+def analyze_loop_timing(loop, graph):
+    """
+    If the loop is dead, it could be removed from the loop list.
+    """
+    in_edges = graph.in_edges(nbunch = loop)
+    out_edges = graph.out_edges(nbunch = loop)
+    all_dead = True
+    for edge in in_edges:
+        if edge.attr['condition'] not in ['loop', 'dead']:
+            all_dead = False
+            break
+
+    if all_dead:
+        for node in loop:
+            node.attr['condition'] = 'dead'
+            viz.revert_state(node)
+        for edge in in_edges:
+            edge.attr['condition'] = 'dead'
+            viz.revert_path(edge)
+        for edge in out_edges:
+            edge.attr['condition'] = 'dead'
+            viz.revert_path(edge)
 
     return
 

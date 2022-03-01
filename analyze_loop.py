@@ -8,13 +8,15 @@ viz = Visualizer()
 # after you initialize the visualizer
 viz.make_snapshots = True
 
+loop_list = set()
 
 def analyze_graph_loop(graph):
     # get origin node
     stack = []
     origin = graph.get_node('1111')
     analyze_node_loop(origin,graph,stack)
-    return
+
+    return list(loop_list)
 
 def analyze_node_loop(state,graph,stack):
     print(f'analyze node loop: {state}')
@@ -22,7 +24,6 @@ def analyze_node_loop(state,graph,stack):
     stack.append(state)
 
     out_edges = graph.out_edges(nbunch = state)
-    in_edges = graph.in_edges(nbunch = state)
     for out_edge in out_edges:
         if out_edge.attr['condition'] != 'dead':
             analyze_path_loop(out_edge,graph,stack)
@@ -36,6 +37,7 @@ def analyze_path_loop(path,graph,stack):
     if out_node in stack:
         loop_start = stack.index(out_node)
         loop = stack[loop_start:]
+        loop_list.add(tuple(loop))
         process_loop(loop,graph)
         print(stack[loop_start:])
 

@@ -126,8 +126,8 @@ def main():
     graph.draw(f'viz/version{version}.png')
     # graphviz.view(f'viz/version{version}.png')
     analyze_graph(graph)
-    analyze_graph_loop(graph)
-    analyze_graph_timing(graph)
+    loop_list = analyze_graph_loop(graph)
+    analyze_graph_timing(graph,loop_list)
 
     viz.snapshot(graph)
     return None
