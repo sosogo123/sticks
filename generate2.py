@@ -55,7 +55,7 @@ def generate_paths(graph: AGraph, in_state: Node, version: int):
         return None
 
     # apply actions
-    action_list = ['HH', 'HL', 'LH', 'LL', 'SU1', 'SD1']
+    action_list = ['HH', 'HL', 'LH', 'LL', 'SU1', 'SD1', 'SU2', 'SD2']
     for action in action_list:
         generate_path(graph, in_state, pos_tuple, version, action)
 
@@ -170,6 +170,20 @@ def apply_action(pos_tuple: tuple, version: int, action: str):
 
         p_high, p_low = p_tuple
 
+    elif action == 'SU2':
+        p_tuple = shift_up(2, p_high, p_low, version)
+        if not p_tuple:
+            return None
+
+        p_high, p_low = p_tuple
+
+    elif action == 'SD2':
+        p_tuple = shift_down(2, p_high, p_low, version)
+        if not p_tuple:
+            return None
+
+        p_high, p_low = p_tuple
+
     # re-order opponent's highs, lows
     if o_high < o_low:
         o_high, o_low = o_low, o_high
@@ -226,7 +240,7 @@ def shift_down(degree, p_high, p_low, version):
     return p_high, p_low
 
 def main():
-    version = 3
+    version = 5
     viz.file_prefix = f'version{version}'
 
     graph = generate_graph(version=version)
