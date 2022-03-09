@@ -5,3 +5,4 @@ temp/*
 *.egg-info
 .vscode/*
 viz/*
+notes.md

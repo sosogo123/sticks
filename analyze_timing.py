@@ -22,7 +22,7 @@ def analyze_graph_timing(graph,loop_list):
         node_list = [node for node in graph.nodes() if node.attr['condition'] !='dead']
         print(f'living nodes: {len(node_list)}')
         for node in node_list:
-            analyze_node_timing(node,graph)
+            analyze_node_timing(node,graph, loop_list)
 
         for loop in loop_list:
             analyze_loop_timing(loop,graph)
@@ -32,7 +32,6 @@ def analyze_graph_timing(graph,loop_list):
         graph_state_current = get_graph_state(graph)
 
     return
-
 
 def analyze_loop_timing(loop, graph):
     """
@@ -73,7 +72,7 @@ def graph_state_changed(previous, current):
     else:
         return False
 
-def analyze_node_timing(state,graph):
+def analyze_node_timing(state,graph, loop_list):
     # check for dead state
     analyze_node_dead(state, graph)
 
@@ -82,11 +81,10 @@ def analyze_node_timing(state,graph):
 
     for edge in edges:        
         if edge.attr['condition'] !='dead':
-            analyze_path_timing(edge,graph)
+            analyze_path_timing(edge,graph, loop_list)
 
         if edge.attr['condition'] == 'win':
-            state.attr['condition'] = 'win'
-            viz.highlight_state(state,color='green')
+            apply_state_condition(state, 'win', loop_list)
 
             # checks for paths not taken ('dead')
             for edgecheck in edges:
@@ -105,8 +103,7 @@ def analyze_node_timing(state,graph):
                     break
 
             if all_losers:
-                state.attr['condition'] = 'lose'
-                viz.highlight_state(state,color='red')
+                apply_state_condition(state, 'lose', loop_list)
 
         if state != '1111':
             if edge.attr['condition'] == 'dead':
@@ -117,17 +114,35 @@ def analyze_node_timing(state,graph):
                         break
 
                 if all_dead:
-                    state.attr['condition'] = 'dead'
-                    viz.revert_state(state)
+                    apply_state_condition(state, 'dead', loop_list)
 
     return
 
-def analyze_path_timing(path,graph):
+def apply_state_condition(state, condition, loop_list):
+    # set condition attribute
+    state.attr['condition'] = condition
+
+    # update the viz
+    if condition == 'win':
+        viz.highlight_state(state,color='green')
+    elif condition == 'lose':
+        viz.highlight_state(state,color='red')
+    elif condition == 'dead':
+        viz.revert_state(state)
+
+    # check against loop list
+    for loop in loop_list:
+        if state in loop:
+            index = loop.index(state)
+            loop.pop(index)
+            break
+
+def analyze_path_timing(path,graph, loop_list):
     in_node = path[0]
     out_node = path[1]
 
     if out_node.attr['condition'] not in ['loop', 'dead']:
-        analyze_node_timing(out_node,graph)
+        analyze_node_timing(out_node,graph,loop_list)
 
         # print(f'path out: {out_node}')
     if out_node.attr['type'] == 'end':
