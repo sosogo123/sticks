@@ -19,7 +19,7 @@ def analyze_graph_loop(graph):
     return list(loop_list)
 
 def analyze_node_loop(state,graph,stack, loop_stack):
-    print(f'analyze node loop: {state}')
+    # print(f'node loop: {state}')
 
     stack.append(state)
     if loop_stack:
@@ -56,12 +56,11 @@ def analyze_path_loop(path,graph,stack, loop_stack):
             path.attr['condition'] = 'loop'
             viz.highlight_path(path, color = 'orange')
 
-
-    if out_node in stack:
+    elif out_node in stack:
         loop_start = stack.index(out_node)
         loop = stack[loop_start:]
         process_loop(loop,graph)
-        print(stack[loop_start:])
+        # print(stack[loop_start:])
 
     else: 
         analyze_node_loop(out_node,graph,stack, loop_stack)
@@ -93,7 +92,7 @@ def process_loop(loop,graph):
     
     for index in range(len(loop)):
         loop_node = loop[index]
-        print(loop_node)
+        # print(loop_node)
         try:
             loop_edge = graph.get_edge(loop[index], loop[index + 1])
         except IndexError:
@@ -104,6 +103,6 @@ def process_loop(loop,graph):
         if loop_edge:
             loop_edge.attr['condition'] = 'loop'
             viz.highlight_path(loop_edge, color = 'orange')
-            print(loop_edge)
+            # print(loop_edge)
        
     return

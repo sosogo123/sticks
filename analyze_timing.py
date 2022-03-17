@@ -24,6 +24,21 @@ def analyze_graph_timing(graph,loop_list):
         for node in node_list:
             analyze_node_timing(node,graph, loop_list)
 
+        # reset graph states
+        graph_state_previous = graph_state_current
+        graph_state_current = get_graph_state(graph)
+
+    graph_state_previous = {}
+    while graph_state_changed(graph_state_previous, graph_state_current):
+        counter = (counter+1)
+        print('counter', counter)
+        
+        # make a list of living nodes
+        node_list = [node for node in graph.nodes() if node.attr['condition'] !='dead']
+        print(f'living nodes: {len(node_list)}')
+        for node in node_list:
+            analyze_node_timing(node,graph, loop_list)
+
         for loop in loop_list:
             analyze_loop_timing(loop,graph)
 

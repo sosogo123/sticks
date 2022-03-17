@@ -17,14 +17,10 @@ def analyze_graph(graph):
     return
 
 def analyze_node(state,graph):
-    state.attr['found'] = 'true'
-    
-    # DEBUG
-    if state.attr['condition'] in ('win', 'lose'):
-        print('node already set')
+    # print(f'node: {state}')
 
+    state.attr['found'] = 'true'    
     viz.highlight_state(state)
-    print(f'node: {state}')
 
     # find edges
     edges = graph.out_edges(nbunch = state)
@@ -105,7 +101,7 @@ def analyze_path(path, graph):
     if out_node.attr['found'] != 'true':
         analyze_node(out_node,graph)
 
-        print(f'path out: {out_node}')
+        # print(f'path out: {out_node}')
     if out_node.attr['type'] == 'end':
         path.attr['condition'] = 'win'
         viz.highlight_path(path,color= 'green')
@@ -119,11 +115,11 @@ def analyze_path(path, graph):
     return
 
 def main():
-    version = 4
+    version = 5
     graph = AGraph()
     graph.layout(prog='dot')
     graph.read(path=f'viz/version{version}.dot')
-    graph.draw(f'viz/version{version}.png')
+    # graph.draw(f'viz/version{version}.png')
     # graphviz.view(f'viz/version{version}.png')
     analyze_graph(graph)
     loop_list = analyze_graph_loop(graph)
