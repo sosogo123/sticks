@@ -114,8 +114,18 @@ def analyze_path(path, graph):
 
     return
 
+def dead_removal(graph):
+        for node in graph.nodes():
+            if node.attr['condition'] == 'dead':
+                graph.remove_node(node)
+        for edge in graph.edges():
+            if edge.attr['condition'] == 'dead':
+                graph.remove_edge(edge)
+        return
+
+
 def main():
-    version = 5
+    version = 4
     graph = AGraph()
     graph.layout(prog='dot')
     graph.read(path=f'viz/version{version}.dot')
@@ -124,6 +134,7 @@ def main():
     analyze_graph(graph)
     loop_list = analyze_graph_loop(graph)
     analyze_graph_timing(graph,loop_list)
+    dead_removal(graph)
 
     viz.snapshot(graph)
     return None
