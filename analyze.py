@@ -10,13 +10,13 @@ viz = Visualizer()
 # after you initialize the visualizer
 viz.make_snapshots = True
 
-def analyze_graph(graph):
+def analyze_graph(graph,full_graph):
     # get origin node
     origin = graph.get_node('1111')
-    analyze_node(origin,graph)
+    analyze_node(origin,graph,full_graph)
     return
 
-def analyze_node(state,graph):
+def analyze_node(state,graph,full_graph):
     # print(f'node: {state}')
 
     state.attr['found'] = 'true'    
@@ -29,22 +29,23 @@ def analyze_node(state,graph):
         state.attr['type'] = 'end'
         viz.highlight_state(state,color='magenta')
 
-    for edge in edges:        
+    for edge in edges:
         if edge.attr['condition'] !='dead':
-            analyze_path(edge,graph)
+            analyze_path(edge,graph, full_graph)
     #print(edges)
         if edge.attr['condition'] == 'win':
             state.attr['condition'] = 'win'
             viz.highlight_state(state,color='green')
 
             # checks for paths not taken ('dead')
-            for edgecheck in edges:
-                if edgecheck.attr['condition'] != 'win':
-                    edgecheck.attr['condition'] = 'dead'
-                    viz.revert_path(edgecheck)
+            if full_graph == False:
+                for edgecheck in edges:
+                    if edgecheck.attr['condition'] != 'win':
+                        edgecheck.attr['condition'] = 'dead'
+                        viz.revert_path(edgecheck)
 
-                    # analyze corresponding node
-                    analyze_node_dead(edgecheck[1], graph)
+                        # analyze corresponding node
+                        analyze_node_dead(edgecheck[1], graph)
                                         
         if edge.attr['condition'] == 'lose':
             all_losers = True
@@ -55,7 +56,7 @@ def analyze_node(state,graph):
 
             if all_losers:
                 state.attr['condition'] = 'lose'
-                viz.highlight_state(state,color='red')
+                viz.highlight_state(state, color='red')
 
         if edge.attr['condition'] == 'dead':
             all_dead = True
@@ -92,14 +93,14 @@ def analyze_node_dead(state, graph):
                 out_edge.attr['condition'] = 'dead'
                 viz.revert_path(out_edge)
 
-def analyze_path(path, graph):
+def analyze_path(path, graph, full_graph):
     path.attr['found'] = 'true'
     viz.highlight_path(path)
 
     out_node = path[1]
 
     if out_node.attr['found'] != 'true':
-        analyze_node(out_node,graph)
+        analyze_node(out_node, graph, full_graph)
 
         # print(f'path out: {out_node}')
     if out_node.attr['type'] == 'end':
@@ -125,16 +126,17 @@ def dead_removal(graph):
 
 
 def main():
-    version = 4
+    version = 5
+    full_graph = True
     graph = AGraph()
     graph.layout(prog='dot')
     graph.read(path=f'viz/version{version}.dot')
     # graph.draw(f'viz/version{version}.png')
     # graphviz.view(f'viz/version{version}.png')
-    analyze_graph(graph)
+    analyze_graph(graph, full_graph)
     loop_list = analyze_graph_loop(graph)
     analyze_graph_timing(graph,loop_list)
-    dead_removal(graph)
+    # dead_removal(graph)
 
     viz.snapshot(graph)
     return None
